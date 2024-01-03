@@ -1,118 +1,100 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:project2/widget.dart';
-import 'Theme.dart';
-import 'package:flutter/services.dart';
-import 'widget.dart';
-import 'addPills.dart';
-import 'loginScreen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+final List<String> _pills = [];
+// domain of your server
+const String _baseURL = 'https://layalalfaraj.000webhostapp.com';
+
+class ShowPills extends StatefulWidget {
+  const ShowPills({Key? key}) : super(key: key);
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<ShowPills> createState() => _ShowPillsState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _ShowPillsState extends State<ShowPills> {
+  bool _load = false;
+
+  void update(bool success) {
+    setState(() {
+      _load = true; // show product list
+      if (!success) { // API request failed
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('failed to load data')));
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    // update data when the widget is added to the tree for the first time.
+    updatePills(update);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Add Pills',
-          style: TextStyle(
-            fontSize: 20.0, // Adjust the font size as needed
-            fontWeight: FontWeight.bold, // Adjust the font weight as needed
-          ),
-        ),
-        backgroundColor: Color(0xFFFFDAB3),
-        // Adjust the background color as needed
-        actions: [
-          IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              // Navigate to LoginScreen when the person icon is pressed
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-              );
-            },
-          ),
-        ],
+        title: const Text('Pills'),
+        centerTitle: true,
       ),
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
-        child: GestureDetector(
-          child: Stack(
-            children: <Widget>[
-              Container(
-                height: double.infinity,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xfff8f5f5),
-                      Color(0xffffdab3),
-                      Color(0xffdcb082),
-                      Color(0xFFD5B68F),
-                    ],
-                  ),
-                ),
-              ),
-              Column(
-                children: [
-                  _addPills(),
-                ],
-              ),
-            ],
-          ),
+      body: _load
+          ? const ListPills()
+          : const Center(
+        child: SizedBox(
+          width: 100,
+          height: 100,
+          child: CircularProgressIndicator(),
         ),
-      ), // Add missing closing parenthesis here
+      ),
     );
   }
+}
 
+class ListPills extends StatelessWidget {
+  const ListPills({Key? key}) : super(key: key);
 
-  Widget _addPills() {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-      // Adjust margin as needed
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: _pills.length,
+      itemBuilder: (context, index) => Column(
         children: [
-          Container(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(DateFormat.yMMMd().format(DateTime.now()),
-                    style: subHeadingStyle),
-                Text("Today", style: HeadingStyle),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to Addpills page when the button is pressed
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Addpills()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              primary: Color(0xFFFFDAB3), // Set the background color
-              textStyle: TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
-                color: Colors.black26,
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  _pills[index],
+                  style: const TextStyle(fontSize: 18),
+                ),
               ),
-              padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-            ),
-            child: Text("Add Pills"),
+            ],
           ),
         ],
       ),
     );
   }
 }
+
+void updatePills(Function(bool success) update) async {
+  try {
+    final url = Uri.https(_baseURL, 'getPill.php');
+    final response = await http.get(url).timeout(const Duration(seconds: 5)); // max timeout 5 seconds
+    _pills.clear(); // clear old products
+    if (response.statusCode == 200) {
+      // if successful call
+      final jsonResponse = convert.jsonDecode(response.body);
+      for (var row in jsonResponse) {
+        _pills.add('name: ${row['name']} note: ${row['note']} startTime: ${row['startTime']} endTime: ${row['endTime']} remind: ${row['remind']} repeat: ${row['repeat']}');
+      }
+      update(true); // callback update method to inform that we completed retrieving data
+    }
+  } catch (e) {
+    update(false); // inform through callback that we failed to get data
+  }
+}
+
+
