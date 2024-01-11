@@ -40,6 +40,10 @@ dependencies:
   intl:
   google_fonts:
   date_picker_timeline:
+  flutter_native_timezone_updated_gradle:
+  flutter_local_notifications:
+  encrypted_shared_preferences: ^2.0.0
+  http: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -93,3 +97,5 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+  assets:
+    - assets/background/

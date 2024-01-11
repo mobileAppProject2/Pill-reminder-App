@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 TextStyle get subHeadingStyle{
   return  GoogleFonts.lato(
     textStyle: TextStyle(
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: FontWeight.bold,
     )
   );
@@ -29,7 +29,7 @@ TextStyle get subTitleStyle{
 }
 
 final ThemeData appTheme = ThemeData(
-  primaryColor: Color(0xFFFFDAB3), // Set your desired primary color
-  scaffoldBackgroundColor: Color(0xfff8f5f5), // Set your desired background color
+  primaryColor: Color(0xFF3B2A75), // Set your desired primary color
+  scaffoldBackgroundColor: Color(0xfff8b3db), // Set your desired background color
   // Add more theme properties as needed
 );

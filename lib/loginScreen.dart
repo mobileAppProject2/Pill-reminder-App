@@ -1,274 +1,169 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:project2/main.dart';
+import 'signUp.dart';
+
+const String _baseURL = 'https://layalalfaraj.000webhostapp.com/Project2';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool isRememberMe = false;
-  Widget buildEmail(){
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children:<Widget> [
-        Text(
-          'Email',
-          style: TextStyle(
-            color: Colors.black38,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+  final TextEditingController _controllerEmail = TextEditingController();
+  final TextEditingController _controllerPassword = TextEditingController();
+
+  void update(bool success) {
+    if (success) { // open the Add Category page if successful
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('login')));
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('failed to login')));
+    }
+  }
+
+  void checkLogin() async {
+    final String email = _controllerEmail.text;
+    final String password = _controllerPassword.text;
+
+    final response = await http.post(
+      Uri.parse('$_baseURL/Login.php'),
+      body: {'email': email, 'password': password},
+    );
+
+    if (response.statusCode == 200) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(email: email),
+        ),
+      );
+    } else {
+      print('Failed to connect to the server: ${response.statusCode}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to connect to the server')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/background/login.jpg'),
+            fit: BoxFit.cover,
           ),
         ),
-        SizedBox(height: 50,),
-        Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 6,
-                    offset: Offset(0,2)
-                )
-              ]
-          ),
-          height: 60,
-          child: TextField(
-            keyboardType: TextInputType.emailAddress,
-            style: TextStyle(
-              color: Colors.black87,
-            ),
-            decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.only(top: 14),
-                prefixIcon: Icon(
-                  Icons.email,
-                  color: Color(0xFFFFDAB3),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 16.0),
+              TextFormField(
+                controller: _controllerEmail,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.8),
+                  labelText: 'Email Address',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 12.0,
+                  ),
                 ),
-                hintText: 'Email',
-                hintStyle: TextStyle(
-                  color: Colors.black38,
-                )
-            ),
-          ),
-        )
-      ],
-    );
-  }
-
-  Widget buildPassword(){
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children:<Widget> [
-        Text(
-          'Password',
-          style: TextStyle(
-            color: Colors.black38,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 50,),
-        Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 6,
-                    offset: Offset(0,2)
-                )
-              ]
-          ),
-          height: 60,
-          child: TextField(
-            obscureText: true,
-            style: TextStyle(
-              color: Colors.black87,
-            ),
-            decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.only(top: 14),
-                prefixIcon: Icon(
-                  Icons.lock,
-                  color: Color(0xFFFFDAB3),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter an email';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16.0),
+              TextFormField(
+                controller: _controllerPassword,
+                obscureText: true,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.8),
+                  labelText: 'Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 12.0,
+                  ),
                 ),
-                hintText: 'Password',
-                hintStyle: TextStyle(
-                  color: Colors.black38,
-                )
-            ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16.0),
+              ElevatedButton(
+                onPressed: () async {
+                  checkLogin();
+                },
+                style: ElevatedButton.styleFrom(
+                  primary: Color(0xFF6852B2),
+                  padding: EdgeInsets.symmetric(
+                    vertical: 24.0,
+                    horizontal: 32.0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                ),
+                child: Text(
+                  'Login',
+                  style: TextStyle(fontSize: 20.0, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 16.0),
+              buildLoginBtn(),
+            ],
           ),
-        )
-      ],
-    );
-  }
-
-  Widget buildForgetPassBtn() {
-    return Container(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: () => print("Forget Password pressed"),
-        style: ButtonStyle(
-          padding: MaterialStateProperty.all(EdgeInsets.only(right: 0)),
         ),
-        child: Text(
-          'Forget Password?',
-          style: TextStyle(
-            color: Colors.black38,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildRememberCb() {
-    return Container(
-      height: 20,
-      child: Row(
-        children: <Widget>[
-          Container(
-            decoration: BoxDecoration(
-              color: isRememberMe ? Color(0xFFFFDAB3): Colors.transparent,
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Checkbox(
-              value: isRememberMe,
-              onChanged: (value) {
-                setState(() {
-                  isRememberMe = value!;
-                });
-              },
-              activeColor: Colors.transparent,
-              checkColor: Colors.black38,
-            ),
-          ),
-          SizedBox(width: 8),
-          Text(
-            'Remember me',
-            style: TextStyle(
-              color: Colors.black38,
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Widget buildLoginBtn() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 25),
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => print('Login Pressed'),
-        style: ElevatedButton.styleFrom(
-          elevation: 5,
-          padding: EdgeInsets.all(15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          primary: Colors.white,
-        ),
-        child: Text(
-          'LOGIN',
-          style: TextStyle(
-            color: Color(0xFF8A7C6C),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildSignUpBtn(){
     return GestureDetector(
-      onTap: () => print("Sign Up Pressed"),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SignUp()),
+        );
+      },
       child: RichText(
         text: TextSpan(
           children: [
             TextSpan(
-              text: 'Don\'t have an Account?',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-                fontSize: 18,
-              )
+              text: 'Don\'t have an account? ',
+              style: TextStyle(color: Colors.black54, fontSize: 18.0),
             ),
             TextSpan(
               text: 'Sign Up',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                )
-            )
-          ]
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
-        child: GestureDetector(
-          child: Stack(
-            children: <Widget>[
-              Container(
-                height: double.infinity,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xfff8f5f5),
-                      Color(0xffffdab3),
-                      Color(0xffdcb082),
-                      Color(0xFFD5B68F),
-                    ],
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 25,
-                    vertical: 120,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children:<Widget> [
-                      Text(
-                        'Sign In' ,
-                        style: TextStyle(
-                          color: Colors.black38,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 50,),
-                      buildEmail(),
-                      SizedBox(height: 15,),
-                      buildPassword(),
-                      buildForgetPassBtn(),
-                      buildRememberCb(),
-                      buildLoginBtn(),
-                      buildSignUpBtn(),
-                    ],
-                  ),
-                ),
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 18.0,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

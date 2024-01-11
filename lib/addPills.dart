@@ -1,52 +1,96 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'Theme.dart';
-import 'home_page.dart';
-import 'loginScreen.dart';
 import 'input_field.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
+
+const String _baseURL = 'https://layalalfaraj.000webhostapp.com/Project2';
 
 class Addpills extends StatefulWidget {
-  const Addpills({Key? key}) : super(key: key);
+  final String email;
+  const Addpills({Key? key, required this.email}) : super(key: key);
 
   @override
   _AddpillsState createState() => _AddpillsState();
 }
-
 class _AddpillsState extends State<Addpills> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  TextEditingController _controllerName = TextEditingController();
+  TextEditingController _controllerNote = TextEditingController();
+  TextEditingController _controllerStartTime = TextEditingController();
+  TextEditingController _controllerEndTime = TextEditingController();
+  TextEditingController _controllerRemind = TextEditingController();
+  TextEditingController _controllerRepeat = TextEditingController();
+  // the below variable is used to display the progress bar when retrieving data
+  bool _loading = false;
+
   DateTime _selectedDate = DateTime.now();
-  String _endTime = " 7:06 PM";
+  String _endTime = DateFormat("hh:mm a").format(DateTime.now()).toString();
   String _startTime = DateFormat("hh:mm a").format(DateTime.now()).toString();
   int _selesctRemid = 5;
   String _selesctRepeat = 'None';
   List<int> reminderList = [5, 10, 15, 20];
   List<String> repeatList = ["None", "Daily", "Weekly", "Monthly"];
 
+
+  @override
+  void dispose() {
+    _controllerName.dispose();
+    _controllerNote.dispose();
+    _controllerStartTime.dispose();
+    _controllerEndTime.dispose();
+    _controllerRemind.dispose();
+    _controllerRepeat.dispose();
+    super.dispose();
+  }
+  void update(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    setState(() {
+      _loading = false;
+    });
+  }
+
+  void AddPill(
+      Function(String text) update,
+      String name,
+      String note,
+      String startTime,
+      String endTime,
+      String remind,
+      String repeat) async {
+    try {
+      final Map<String, String> data = {
+        'email': widget.email,
+        'name': name,
+        'note': note,
+        'startTime': startTime,
+        'endTime': endTime,
+        'remind': remind,
+        'repeat': repeat,
+        'key': 'your_key',
+      };
+
+      final response = await http.post(
+        Uri.parse('$_baseURL/addPill.php'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: convert.jsonEncode(data),
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        update(response.body);
+      }
+    } catch (e) {
+      update(e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Add Pills',
-          style: TextStyle(
-            fontSize: 20.0, // Adjust the font size as needed
-            fontWeight: FontWeight.bold, // Adjust the font weight as needed
-          ),
-        ),
-        backgroundColor: Color(0xFFFFDAB3), // Adjust the background color as needed
-        actions: [
-          IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              // Navigate to LoginScreen when the person icon is pressed
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-              );
-            },
-          ),
-        ],
-      ),
       body:Container(
         padding: const EdgeInsets.only(left: 20, right: 20),
         child: SingleChildScrollView(
@@ -57,23 +101,21 @@ class _AddpillsState extends State<Addpills> {
                 "Add pills",
                 style: HeadingStyle,
               ),
-              MyInputField(title: 'Title', hint: 'Enter your title'),
-              MyInputField(title: 'Note', hint: 'Enter your note'),
               MyInputField(
-                title: "Date",
-                hint: DateFormat.yMd().format(_selectedDate),
-                widget: IconButton(
-                  icon: Icon(Icons.calendar_today_outlined),
-                  color: Colors.grey,
-                  onPressed: () {
-                    _getDateForUser();
-                  },
-                ),
+                  controller: _controllerName,
+                  title: 'name',
+                  hint: 'Enter a name'
+              ),
+              MyInputField(
+                  controller: _controllerNote,
+                  title: 'Note',
+                  hint: 'Enter your note'
               ),
               Row(
                 children: [
                   Expanded(
                     child: MyInputField(
+                      controller: _controllerStartTime,
                       title: 'Start Date',
                       hint: _startTime,
                       widget: IconButton(
@@ -92,6 +134,7 @@ class _AddpillsState extends State<Addpills> {
                   ),
                   Expanded(
                     child: MyInputField(
+                      controller: _controllerEndTime,
                       title: 'End Date',
                       hint: _endTime,
                       widget: IconButton(
@@ -108,6 +151,7 @@ class _AddpillsState extends State<Addpills> {
                 ],
               ),
               MyInputField(
+                controller: _controllerRemind,
                 title: 'Remind',
                 hint: '$_selesctRemid minutes early',
                 widget: DropdownButton(
@@ -136,6 +180,7 @@ class _AddpillsState extends State<Addpills> {
                 ),
               ),
               MyInputField(
+                controller: _controllerRepeat,
                 title: 'Repeat',
                 hint: '$_selesctRepeat',
                 widget: DropdownButton(
@@ -163,24 +208,30 @@ class _AddpillsState extends State<Addpills> {
                   }).toList(),
                 ),
               ),
-              SizedBox(height: 50,),
+              SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
+                  AddPill(
+                    update,
+                    _controllerName.text,
+                    _controllerNote.text,
+                    _startTime,
+                    _endTime,
+                    _selesctRemid.toString(),
+                    _selesctRepeat,
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Color(0xFFFDAB3), // Set the background color
-                  textStyle: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black26,
+                  primary: Color(0xFF6852B2),
+                  padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 40.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
                 ),
-                child: Text("create"),
+                child: Text(
+                  'Add',
+                  style: TextStyle(fontSize: 15.0, color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -246,3 +297,6 @@ class _AddpillsState extends State<Addpills> {
     return '$hour:${minute.toString().padLeft(2, '0')} $period';
   }
 }
+
+
+
